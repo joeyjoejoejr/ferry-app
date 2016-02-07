@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+require 'twitter'
+require "dotenv"
+Dotenv.load
+
+user_name = ARGV.shift
+exit unless user_name
+
+client = Twitter::REST::Client.new do |config|
+  config.consumer_key        = ENV.fetch("TWITTER_KEY")
+  config.consumer_secret     = ENV.fetch("TWITTER_SECRET")
+  config.access_token        = ENV.fetch("TWITTER_ACCESS_TOKEN")
+  config.access_token_secret = ENV.fetch("TWITTER_TOKEN_SECRET")
+end
+
+retry_minutes = 0
+
+begin
+  tweets = client.user_timeline(user_name, count: 200)
+rescue
+  STDERR.print "Retrying: Waiting for #{retry_minutes}\r"
+  retry_minutes = 1
+  sleep 60
+  retry
+end
+STDERR.print " " * 30 + "\r"
+
+max_id = tweets.last.id - 1
+STDERR.print "Max ID: #{max_id}\r"
+
+retry_minutes = 0
+
+loop do
+  begin
+    new_tweets = client.user_timeline('canal_ferry', count: 200, max_id: max_id)
+  rescue Twitter::Error::TooManyRequests
+    STDERR.print "Retrying: Waiting for #{retry_minutes}\r"
+    sleep 60
+    retry
+  end
+
+  break if new_tweets.none?
+  tweets += new_tweets
+  max_id = tweets.last.id - 1
+  STDERR.print "Max ID: #{max_id}\r"
+end
+
+puts tweets.map(&:to_h).to_json
+
+
