@@ -33,7 +33,7 @@ retry_minutes = 0
 
 loop do
   begin
-    new_tweets = client.user_timeline('canal_ferry', count: 200, max_id: max_id)
+    new_tweets = client.user_timeline(user_name, count: 200, max_id: max_id)
   rescue Twitter::Error::TooManyRequests
     STDERR.print "Retrying: Waiting for #{retry_minutes}\r"
     sleep 60
