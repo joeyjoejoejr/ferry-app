@@ -70,4 +70,12 @@ namespace :db do
       end
     end
   end
+
+  task :dump do
+    sh "pg_dump --no-owner --no-acl #{ENV.fetch("DATABASE_URL")} | gzip >> db/dump.sql.gz"
+  end
+
+  task :restore do
+    sh "gunzip -c db/dump.sql.gz | psql #{ENV.fetch("DATABASE_URL")}"
+  end
 end
